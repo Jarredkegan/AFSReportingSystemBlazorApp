@@ -1,0 +1,115 @@
+﻿@page "/TeamMemberPages/TeamMembers"
+
+@using DataAccessLibrary
+@using DataAccessLibrary.Models
+@using DataAccessLibrary.TeamMemberData
+@using AFSReportingSystemBlazorApp.Models
+
+@inject ITeamMemberData _db
+@inject IJSRuntime JsRuntime;
+
+<h3>Team Members</h3>
+
+<h4>Add new Team Member</h4>
+<EditForm Model="@newTeamMember" OnValidSubmit="@InsertTeamMember">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText id="firstName" placeholder="First Name" @bind-Value="newTeamMember.FirstName" />
+    <InputText id="lastName" placeholder="Last Name" @bind-Value="newTeamMember.LastName" />
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+<h4>View of current Team Members</h4>
+
+@*<h4>Delete Team Member</h4>
+    <EditForm Model="@deleteTeamMember" OnValidSubmit="@DeleteTeamMember">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <InputText id="firstName" @bind-Value="deleteTeamMember.FirstName" />
+        <InputText id="lastName" @bind-Value="deleteTeamMember.LastName" />
+
+        <button type="submit" class="btn btn-danger">Delete</button>
+    </EditForm>*@
+
+@if (teamMembers is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var teamMember in teamMembers)
+            {
+                <tr>
+                    <td>@teamMember.FirstName</td>
+                    <td>@teamMember.LastName</td>
+                    @*<td><button @onclick="@(() => Edit())"></button></td>*@
+                    <td><button type="submit" class="btn btn-danger" @onclick="@(() => DeleteTeamMember(teamMember.FirstName, teamMember.LastName))">Delete</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<TeamMemberModel> teamMembers;
+    private DisplayTeamMemberModel newTeamMember = new DisplayTeamMemberModel();
+    private DisplayTeamMemberModel deleteTeamMember = new DisplayTeamMemberModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        teamMembers = await _db.GetTeamMembers();
+    }
+
+    private async Task InsertTeamMember()
+    {
+        TeamMemberModel member = new TeamMemberModel
+        {
+            FirstName = newTeamMember.FirstName,
+            LastName = newTeamMember.LastName
+        };
+
+        await _db.InsertTeamMember(member);
+
+        teamMembers.Add(member);
+
+        newTeamMember = new DisplayTeamMemberModel();
+    }
+
+    private async Task DeleteTeamMember(string FirstName, string LastName)
+    {
+
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete " + FirstName + " " + LastName + "?");
+
+        if (confirmed)
+        {
+            TeamMemberModel teamMember = new TeamMemberModel
+            {
+                FirstName = FirstName,
+                LastName = LastName
+            };
+
+            await _db.DeleteTeamMember(teamMember);
+
+            //used to refresh new list of team members
+            await OnInitializedAsync();
+
+            deleteTeamMember = new DisplayTeamMemberModel();
+        }
+        else
+        {
+            return;
+        }
+
+    }
+}

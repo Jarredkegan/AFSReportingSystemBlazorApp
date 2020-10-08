@@ -1,0 +1,407 @@
+﻿@page "/SanitationPage/SanitationMainPage"
+
+@using DataAccessLibrary
+@using DataAccessLibrary.Models.SanitationModels
+@using DataAccessLibrary.Data.SanitationData.AisleSpillData
+@using DataAccessLibrary.Data.SanitationData.DockSpillData
+@using DataAccessLibrary.Data.SanitationData.CardboardRequestData
+
+@using AFSReportingSystemBlazorApp.Models.SanitationDisplayModels
+@using AFSReportingSystemBlazorApp.Components.SanitationModalForms
+
+@inject ISpillData _db;
+@inject IDockSpillData _dbDockSpill;
+@inject ICardboardRequestData _dbCardboardRequest;
+
+@inject IJSRuntime JsRuntime;
+@inject IToastService toastService;
+
+
+@*Jumbotron header with form buttons*@
+<div class="jumbotron">
+    <h1 class="display-4">Sanitation</h1>
+    <p class="lead">Quickly make a report directly to sanitation.</p>
+    <hr class="my-4">
+
+    <button type="button" class="btn btn-primary btn-lg" @onclick="() => AisleSpillForm.Open()">Spill in an Aisle</button>
+    <AisleSpillFormModal @ref="AisleSpillForm"></AisleSpillFormModal>
+
+    <button type="button" class="btn btn-primary btn-lg" @onclick="() => DockSpillForm.Open()">Spill on the dock</button>
+    <DockSpillFormModal @ref="DockSpillForm"></DockSpillFormModal>
+
+    <button type="button" class="btn btn-primary btn-lg" @onclick="() => CardboardRequestForm.Open()">Request Cardboard</button>
+    <CardboardRequestFormModal @ref="CardboardRequestForm"></CardboardRequestFormModal>
+
+
+</div>
+
+@*Aisle spill table*@
+@if (spills is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    if (spills.Count == 0)
+    {
+        <div class="alert alert-dark">
+            <h4 class="text-center">Aisle Spills Complete</h4>
+        </div>
+    }
+    else
+    {
+        <hr class="my-4">
+        @*<div class="p-1 mb-1 bg-dark text-white">*@
+        <div>
+            <h4 class="text-center">Aisles</h4>
+        </div>
+
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Department</th>
+                    <th>Aisle</th>
+                    <th>Wet Spill</th>
+                    <th>Glass</th>
+                    <th>Scrubber</th>
+                    <th>Comments</th>
+                    <th>Date/Time</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var spill in spills)
+                {
+                <tr>
+                    <td>@spill.Department</td>
+                    <td>@spill.Aisle</td>
+                    <td>@spill.WetSpill</td>
+                    <td>@spill.Glass</td>
+                    <td>@spill.Scrubber</td>
+                    <td>@spill.Comments</td>
+                    <td>@spill.Date</td>
+                    <td>
+                        <div>
+                            <button type="submit" class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Only mark as complete if the spill has been resolved" @onclick="@(() => CompleteSpill(spill))">Complete</button>
+                            @*<button type="submit" class="btn btn-warning" data-toggle="tooltip" data-placement="top" title="Make changes to this spill">Edit</button>*@
+                            @*<button type="submit" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Deleting this spill cannot be undone" @onclick="@(() => DeleteSpill(spill.Id))">Delete</button>*@
+                        </div>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <hr class="my-4">
+}
+
+@*Dock spill table*@
+@if (dockSpills is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    if (dockSpills.Count == 0)
+    {
+        <div class=" alert alert-dark">
+            <h4 class="text-center">Dock Spills Complete</h4>
+        </div>
+
+    }
+    else
+    {
+        @*<div class="p-1 mb-1 bg-dark text-white">*@
+        <div>
+            <h4 class="text-center">Dock</h4>
+        </div>
+
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Department</th>
+                    <th>Dock</th>
+                    <th>Wet Spill</th>
+                    <th>Glass</th>
+                    <th>Scrubber</th>
+                    <th>Comments</th>
+                    <th>Date/Time</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var spill in dockSpills)
+                {
+                    <tr>
+                        <td>@spill.Department</td>
+                        <td>@spill.Dock</td>
+                        <td>@spill.WetSpill</td>
+                        <td>@spill.Glass</td>
+                        <td>@spill.Scrubber</td>
+                        <td>@spill.Comments</td>
+                        <td>@spill.Date</td>
+                        <td>
+                            <div>
+                                <button type="submit" class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Only mark as complete if the spill has been resolved" @onclick="@(() => CompleteDockSpill(spill))">Complete</button>
+                                @*<button type="submit" class="btn btn-warning" data-toggle="tooltip" data-placement="top" title="Make changes to this spill">Edit</button>*@
+                                @*<button type="submit" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Deleting this spill cannot be undone" @onclick="@(() => DeleteDockSpill(spill.Id))">Delete</button>*@
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <hr class="my-4">
+}
+
+@*Cardboard request table*@
+@if (cardboardRequests is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    if (cardboardRequests.Count == 0)
+    {
+        <div class="alert alert-dark">
+            <h4 class="text-center">Cardboard Requests Complete</h4>
+        </div>
+    }
+    else
+    {
+        @*<div class="p-1 mb-1 bg-dark text-white">*@
+        <div>
+            <h4 class="text-center">Cardboard Requests</h4>
+        </div>
+
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Department</th>
+                    <th>Dock</th>
+                    <th>Comments</th>
+                    <th>Date/Time</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var request in cardboardRequests)
+                {
+                    <tr>
+                        <td>@request.Department</td>
+                        <td>@request.Dock</td>
+                        <td>@request.Comments</td>
+                        <td>@request.Date</td>
+                        <td>
+                            <div>
+                                <button type="submit" class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Only mark as complete if the request has been resolved" @onclick="@(() => CompleteCardboardRequest(request))">Complete</button>
+                                @*<button type="submit" class="btn btn-warning" data-toggle="tooltip" data-placement="top" title="Make changes to this request">Edit</button>*@
+                                @*<button type="submit" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Deleting this request cannot be undone" @onclick="@(() => DeleteCardboardRequest(request.Id))">Delete</button>*@
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <hr class="my-4">
+}
+
+@code {
+
+    #region Modal Forms
+    private AisleSpillFormModal AisleSpillForm { get; set; }
+    private CardboardRequestFormModal CardboardRequestForm { get; set; }
+    private DockSpillFormModal DockSpillForm { get; set; }
+    #endregion
+
+    #region Table Lists
+    public List<SpillModel> spills;
+    public SpillModel completedSpill;
+    public List<DockSpillModel> dockSpills;
+    public List<CardboardRequestModel> cardboardRequests;
+    #endregion
+
+    #region Display Models
+    private DisplayAisleSpillModel newSpill = new DisplayAisleSpillModel();
+    private DisplayAisleSpillModel deleteSpill = new DisplayAisleSpillModel();
+    private DisplayDockSpillModel deleteDockSpill = new DisplayDockSpillModel();
+    #endregion
+
+    #region OnInitializedAsync
+    protected override async Task OnInitializedAsync()
+    {
+        spills = await _db.GetActiveSpills();
+        dockSpills = await _dbDockSpill.GetActiveSpills();
+        cardboardRequests = await _dbCardboardRequest.GetActiveCardboardRequests();
+
+    }
+    #endregion
+
+    #region Crud Methods - I feel like these belong somewhere else
+
+    //should i move these to their components?
+    /// <summary>
+    /// Delete Aisle Spill from dbo.Spills
+    /// </summary>
+    /// <param name="Id"></param>
+    /// <returns></returns>
+    private async Task DeleteSpill(int Id)
+    {
+
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this spill report? This action cannot be undone");
+
+        if (confirmed)
+        {
+
+            await _db.DeleteSpill(Id);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteSpill = new DisplayAisleSpillModel();
+        }
+        else
+        {
+            return;
+        }
+    }
+
+
+    //should i move these to their components?
+    /// <summary>
+    /// Delete Dock Spill from dbo.DockSpills
+    /// </summary>
+    /// <param name="Id"></param>
+    /// <returns></returns>
+    private async Task DeleteDockSpill(int Id)
+    {
+
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this spill report? This action cannot be undone");
+
+        if (confirmed)
+        {
+
+            await _dbDockSpill.DeleteDockSpill(Id);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteDockSpill = new DisplayDockSpillModel();
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    //should i move these to their components?
+    /// <summary>
+    /// Delete Cardboard Request from dbo.CardboardRequest
+    /// </summary>
+    /// <param name="Id"></param>
+    /// <returns></returns>
+    private async Task DeleteCardboardRequest(int Id)
+    {
+
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this spill report? This action cannot be undone");
+
+        if (confirmed)
+        {
+
+            await _dbCardboardRequest.DeleteCardboardRequest(Id);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteDockSpill = new DisplayDockSpillModel();
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    /// <summary>
+    /// Complete Aisle Spill. Moves the spill to dbo.CompletedAisleSpills
+    /// and deletes then from dbo.Spills
+    /// </summary>
+    /// <param name="Id"></param>
+    /// <returns></returns>
+    private async Task CompleteSpill(SpillModel spill)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to mark this spill report as completed?");
+
+        if (confirmed)
+        {
+
+            //Complete - Move to dbo.CompletedAisleSpills and then delete from dbo.Spills
+            await _db.CompleteAisleSpill(spill);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteSpill = new DisplayAisleSpillModel();
+
+            toastService.ShowSuccess("Report successfully completed", "Thank you!");
+
+        }
+        else
+        {
+            return;
+        }
+
+    }
+
+    private async Task CompleteDockSpill(DockSpillModel spill)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to mark this spill report as completed?");
+
+        if (confirmed)
+        {
+
+            //Complete - Move to dbo.CompletedDockSpills and then delete from dbo.DockSpills
+            await _dbDockSpill.CompleteDockSpill(spill);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteSpill = new DisplayAisleSpillModel();
+
+            toastService.ShowSuccess("Report successfully completed", "Thank you!");
+
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    private async Task CompleteCardboardRequest(CardboardRequestModel request)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to mark this request as completed?");
+
+        if (confirmed)
+        {
+
+            //Complete - Move to dbo.CompletedCardboardRequests and then delete from dbo.CardboardRequest
+            await _dbCardboardRequest.CompleteCardboardRequest(request);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteSpill = new DisplayAisleSpillModel();
+
+            toastService.ShowSuccess("Report successfully completed", "Thank you!");
+
+        }
+        else
+        {
+            return;
+        }
+
+    }
+
+    #endregion
+}

@@ -1,0 +1,359 @@
+﻿@page "/MaintenancePage/MaintenanceMainPage"
+
+@using DataAccessLibrary
+@using DataAccessLibrary.Models.MaintenanceModels
+@using DataAccessLibrary.Data.MaintenanceData
+@using DataAccessLibrary.Data.MaintenanceData.RedDoorServiceData
+
+
+@using AFSReportingSystemBlazorApp.Models.MaintenanceDisplayModels
+@using AFSReportingSystemBlazorApp.Components.MaintenanceModalForms
+
+@inject IRackDamageData _db;
+@inject IDoorDamageData _dbDoor;
+@inject IRedDoorServiceData _dbRedDoor;
+
+@inject IJSRuntime JsRuntime;
+@inject IToastService toastService;
+
+
+@*Jumbotron header with form buttons*@
+<div class="jumbotron">
+    <h1 class="display-4">Maintenance</h1>
+    <p class="lead">Quickly make a report directly to Maintenance.</p>
+    <hr class="my-4">
+
+    <button type="button" class="btn btn-primary btn-lg" @onclick="() => RackDamageModalForm.Open()">Rack Damage</button>
+    <RackDamageModalForm @ref="RackDamageModalForm"></RackDamageModalForm>
+
+    <button type="button" class="btn btn-primary btn-lg" @onclick="() => DoorDamageModalForm.Open()">Door Damage</button>
+    <DoorDamageModalForm @ref="DoorDamageModalForm"></DoorDamageModalForm>
+
+    <button type="button" class="btn btn-primary btn-lg" @onclick="() => RedDoorServiceModalForm.Open()">Red Door Service</button>
+    <RedDoorServiceModalForm @ref="RedDoorServiceModalForm"></RedDoorServiceModalForm>
+
+</div>
+
+
+@*Rack Damage table*@
+@if (reports is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    if (reports.Count == 0)
+    {
+        <div class=" alert alert-dark">
+            <h4 class="text-center">Rack Damage Complete</h4>
+        </div>
+    }
+    else
+    {
+        <hr class="my-4">
+        @*<div class="p-1 mb-1 bg-dark text-white">*@
+        <div>
+            <h4 class="text-center">Rack Damage</h4>
+        </div>
+
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Department</th>
+                    <th>Slot</th>
+                    <th>Comments</th>
+                    <th>Date/Time</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var report in reports)
+                {
+                    <tr>
+                        <td>@report.Department</td>
+                        <td>@report.Slot</td>
+                        <td>@report.Comments</td>
+                        <td>@report.Date</td>
+                        <td>
+                            <div>
+                                <button type="submit" class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Only mark as complete if this report has been resolved" @onclick="@(() => CompleteReport(report))">Complete</button>
+                                @*<button type="submit" class="btn btn-warning" data-toggle="tooltip" data-placement="top" title="Make changes to this spill">Edit</button>*@
+                                @*<button type="submit" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Deleting this spill cannot be undone" @onclick="@(() => DeleteSpill(spill.Id))">Delete</button>*@
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <hr class="my-4">
+}
+
+@*Door Damage table*@
+@if (reportsDoor is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    if (reportsDoor.Count == 0)
+    {
+        <div class=" alert alert-dark">
+            <h4 class="text-center">Door Damage Complete</h4>
+        </div>
+    }
+    else
+    {
+        <hr class="my-4">
+        @*<div class="p-1 mb-1 bg-dark text-white">*@
+        <div>
+            <h4 class="text-center">Door Damage</h4>
+        </div>
+
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Department</th>
+                    <th>Door</th>
+                    <th>Comments</th>
+                    <th>Date/Time</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var report in reportsDoor)
+                {
+                    <tr>
+                        <td>@report.Department</td>
+                        <td>@report.Door</td>
+                        <td>@report.Comments</td>
+                        <td>@report.Date</td>
+                        <td>
+                            <div>
+                                <button type="submit" class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Only mark as complete if this report has been resolved" @onclick="@(() => CompleteDoorReport(report))">Complete</button>
+                                @*<button type="submit" class="btn btn-warning" data-toggle="tooltip" data-placement="top" title="Make changes to this spill">Edit</button>*@
+                                @*<button type="submit" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Deleting this spill cannot be undone" @onclick="@(() => DeleteSpill(spill.Id))">Delete</button>*@
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <hr class="my-4">
+}
+
+@*Red Door Service table*@
+@if (reportsRedDoor is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    if (reportsRedDoor.Count == 0)
+    {
+        <div class=" alert alert-dark">
+            <h4 class="text-center">Red Door Service Complete</h4>
+        </div>
+    }
+    else
+    {
+        <hr class="my-4">
+        @*<div class="p-1 mb-1 bg-dark text-white">*@
+        <div>
+            <h4 class="text-center">Red Door Service</h4>
+        </div>
+
+        <table class="table table-striped table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Location</th>
+                    <th>Comments</th>
+                    <th>Date/Time</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var report in reportsRedDoor)
+                {
+                    <tr>
+                        <td>@report.Location</td>
+                        <td>@report.Comments</td>
+                        <td>@report.Date</td>
+                        <td>
+                            <div>
+                                <button type="submit" class="btn btn-success" data-toggle="tooltip" data-placement="top" title="Only mark as complete if this report has been resolved" @onclick="@(() => CompleteRedDoorService(report))">Complete</button>
+                                @*<button type="submit" class="btn btn-warning" data-toggle="tooltip" data-placement="top" title="Make changes to this spill">Edit</button>*@
+                                @*<button type="submit" class="btn btn-danger" data-toggle="tooltip" data-placement="top" title="Deleting this spill cannot be undone" @onclick="@(() => DeleteSpill(spill.Id))">Delete</button>*@
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <hr class="my-4">
+}
+
+
+@code {
+
+    #region Modal Forms
+    private RackDamageModalForm RackDamageModalForm { get; set; }
+    private DoorDamageModalForm DoorDamageModalForm { get; set; }
+    private RedDoorServiceModalForm RedDoorServiceModalForm { get; set; }
+    #endregion
+
+    #region Table Lists
+    public List<RackDamageModel> reports;
+    public List<DoorDamageModel> reportsDoor;
+    public List<RedDoorServiceModel> reportsRedDoor;
+    #endregion
+
+    #region Completed Models
+    public RackDamageModel completedSpill;
+    #endregion
+
+    #region Display Models
+    private DisplayRackDamageModel newReport = new DisplayRackDamageModel();
+    private DisplayRackDamageModel deleteReport = new DisplayRackDamageModel();
+
+    private DisplayDoorDamageModel newReportDoor = new DisplayDoorDamageModel();
+    private DisplayDoorDamageModel deleteReportDoor = new DisplayDoorDamageModel();
+
+    private DisplayRedDoorServiceModel newReportRedDoor = new DisplayRedDoorServiceModel();
+    private DisplayRedDoorServiceModel deleteRedReportDoor = new DisplayRedDoorServiceModel();
+    #endregion
+
+    #region OnInitializedAsync
+    protected override async Task OnInitializedAsync()
+    {
+        reports = await _db.GetActiveReports();
+        reportsDoor = await _dbDoor.GetActiveReports();
+        reportsRedDoor = await _dbRedDoor.GetActiveReports();
+    }
+    #endregion
+
+    #region Crud Methods - I feel like these belong somewhere else
+
+    //should i move these to their components?
+
+    /// <summary>
+    /// Delete request from dbo.RackDamageModel
+    /// </summary>
+    /// <param name="Id"></param>
+    /// <returns></returns>
+    private async Task DeleteReport(int Id)
+    {
+
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this request? This action cannot be undone");
+
+        if (confirmed)
+        {
+
+            await _db.DeleteReport(Id);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteReport = new DisplayRackDamageModel();
+        }
+        else
+        {
+            return;
+        }
+    }
+
+
+    /// <summary>
+    /// Complete Rack Damage. Marks Complete as true
+    /// </summary>
+    /// <param name="Id"></param>
+    /// <returns></returns>
+    private async Task CompleteReport(RackDamageModel report)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to mark this request as completed?");
+
+        if (confirmed)
+        {
+
+            //Complete
+            await _db.CompleteRackDamage(report);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteReport = new DisplayRackDamageModel();
+
+            toastService.ShowSuccess("Report successfully completed", "Thank you!");
+
+        }
+        else
+        {
+            return;
+        }
+
+    }
+
+    /// <summary>
+    /// Complete Door Damage. Marks Complete as true
+    /// </summary>
+    /// <param name="Id"></param>
+    /// <returns></returns>
+    private async Task CompleteDoorReport(DoorDamageModel report)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to mark this request as completed?");
+
+        if (confirmed)
+        {
+
+            //Complete
+            await _dbDoor.CompleteRackDamage(report);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteReportDoor = new DisplayDoorDamageModel();
+
+            toastService.ShowSuccess("Report successfully completed", "Thank you!");
+
+        }
+        else
+        {
+            return;
+        }
+
+    }
+
+    /// <summary>
+    /// Complete Door Damage. Marks Complete as true
+    /// </summary>
+    /// <param name="Id"></param>
+    /// <returns></returns>
+    private async Task CompleteRedDoorService(RedDoorServiceModel report)
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to mark this request as completed?");
+
+        if (confirmed)
+        {
+
+            //Complete
+            await _dbRedDoor.CompleteRedDoorService(report);
+
+            //used to refresh new list
+            await OnInitializedAsync();
+
+            deleteRedReportDoor = new DisplayRedDoorServiceModel();
+
+            toastService.ShowSuccess("Report successfully completed", "Thank you!");
+
+        }
+        else
+        {
+            return;
+        }
+
+    }
+
+    #endregion
+}

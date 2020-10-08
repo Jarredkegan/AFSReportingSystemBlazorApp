@@ -1,0 +1,114 @@
+﻿@using DataAccessLibrary;
+@using DataAccessLibrary.Models.SafetyModels
+@using DataAccessLibrary.Data.SafetyData.LooseProductData
+@using AFSReportingSystemBlazorApp.Models.SafetyDisplayModels
+
+@inject ILooseProductData _db
+@inject NavigationManager NavigationManager
+
+<div class="modal @ModalClass" tabindex="-1" role="dialog" style="display:@ModalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Loose Product</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => Close()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <EditForm Model="@newReport" OnValidSubmit="@InsertReport">
+                    <DataAnnotationsValidator />
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="department">
+                                Department:
+                                <InputSelect id="department" @bind-Value="newReport.Department">
+                                    <option></option>
+                                    <option>Deli</option>
+                                    <option>Frozen</option>
+                                    <option>Grocery</option>
+                                    <option>Produce</option>
+                                </InputSelect>
+                            </label>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="aisle">
+                                Slot:
+                                <InputText id="slot" @bind-Value="newReport.Slot" placeholder="e.g. 74-123-D"></InputText>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-xl-auto">
+                            <InputTextArea rows="5" columns="20" id="comments" @bind-Value="newReport.Comments" placeholder="You can leave some info about the pallet here or leave it blank" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="() => Close()">Close</button>
+                    </div>
+                    <ValidationSummary />
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@if (ShowBackdrop)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+
+@code {
+
+    public Guid Guid = Guid.NewGuid();
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    public bool ShowBackdrop = false;
+    public bool IsOpen = false;
+
+    private DisplayLooseProductModel newReport = new DisplayLooseProductModel();
+
+    public void Open()
+    {
+        ModalDisplay = "block;";
+        ModalClass = "Show";
+        ShowBackdrop = true;
+        IsOpen = true;
+        StateHasChanged();
+    }
+
+    public void Close()
+    {
+        ModalDisplay = "none";
+        ModalClass = "";
+        ShowBackdrop = false;
+        IsOpen = false;
+        StateHasChanged();
+
+    }
+
+    private async Task InsertReport()
+    {
+        LooseProductModel report = new LooseProductModel()
+        {
+            Department = newReport.Department,
+            Slot = newReport.Slot,
+            Comments = newReport.Comments,
+            Date = DateTime.Now,
+            Complete = false
+        };
+
+        await _db.InsertReport(report);
+
+        newReport = new DisplayLooseProductModel();
+
+        Close();
+
+        //force reload to refresh list
+        NavigationManager.NavigateTo("/SafetyPage/SafetyMainPage", true);
+    }
+}

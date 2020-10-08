@@ -1,0 +1,190 @@
+﻿@using DataAccessLibrary;
+@using DataAccessLibrary.Models.SanitationModels;
+@using DataAccessLibrary.Data.SanitationData.AisleSpillData;
+@using AFSReportingSystemBlazorApp.Models.SanitationDisplayModels;
+
+@inject ISpillData _db
+@inject NavigationManager NavigationManager
+
+<div class="modal @ModalClass" tabindex="-1" role="dialog" style="display:@ModalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report a new spill</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="() => Close()">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+
+                <EditForm Model="@newSpill" OnValidSubmit="@InsertSpill">
+                    <DataAnnotationsValidator />
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="department">
+                                Department:
+                                <InputSelect id="department" @bind-Value="newSpill.Department">
+                                    <option></option>
+                                    <option>A5</option>
+                                    <option>Deli</option>
+                                    <option>Frozen</option>
+                                    <option>Grocery</option>
+                                    <option>Produce</option>
+                                </InputSelect>
+                            </label>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="aisle">
+                                Aisle:
+                                <InputSelect id="aisle" @bind-Value="newSpill.Aisle">
+                                    <option></option>
+                                    @if (newSpill.Department == "Frozen")
+                                    {
+                                        for (int i = 1; i < 17; i++)
+                                        {
+                                            <option>@i.ToString()</option>
+                                        }
+                                    }
+                                    else if (newSpill.Department == "Deli")
+                                    {
+                                        for (int i = 17; i < 26; i++)
+                                        {
+                                            <option>@i.ToString()</option>
+                                            @if (i == 23)
+                                            {
+                                                i = 24;
+                                            }
+                                        }
+                                    }
+                                    else if (newSpill.Department == "Produce")
+                                    {
+                                        for (int i = 24; i < 35; i++)
+                                        {
+                                            <option>@i.ToString()</option>
+                                            @if (i == 24)
+                                            {
+                                                i = 25;
+                                            }
+                                        }
+                                    }
+                                    else if (newSpill.Department == "A5")
+                                    {
+                                        for (int i = 35; i < 40; i++)
+                                        {
+                                            <option>@i.ToString()</option>
+                                        }
+                                    }
+                                    else if (newSpill.Department == "Grocery")
+                                    {
+                                        for (int i = 50; i < 95; i++)
+                                        {
+                                            <option>@i.ToString()</option>
+                                            @if (i == 62)
+                                            {
+                                                i = 69;
+                                            }
+                                        }
+                                    }
+                                </InputSelect>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label for="wetSpill">
+                                Wet spill:
+                                <InputCheckbox id="wetSpill" @bind-Value="newSpill.WetSpill">
+                                    <label>Yes</label>
+                                </InputCheckbox>
+                                <small id="wetSpill" class="form-text text-muted">Only check if true</small>
+                            </label>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="glass">
+                                Glass:
+                                <InputCheckbox id="glass" @bind-Value="newSpill.Glass" />
+                                <small id="glass" class="form-text text-muted">Only check if true</small>
+                            </label>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="scrubber">
+                                Scrubber:
+                            </label>
+                            <InputCheckbox id="scrubber" @bind-Value="newSpill.Scrubber" />
+                            <small id="scrubber" class="form-text text-muted">Only check if true</small>
+                        </div>
+                        <div class="form-group col-xl-auto">
+                            <InputTextArea rows="5" columns="20" id="comments" @bind-Value="newSpill.Comments" placeholder="You can leave some info about the spill here or leave it blank" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick="() => Close()">Close</button>
+                    </div>
+                    <ValidationSummary />
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@if (ShowBackdrop)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+
+@code {
+
+    public Guid Guid = Guid.NewGuid();
+    public string ModalDisplay = "none;";
+    public string ModalClass = "";
+    public bool ShowBackdrop = false;
+    public bool IsOpen = false;
+
+    private DisplayAisleSpillModel newSpill = new DisplayAisleSpillModel();
+
+    public void Open()
+    {
+        ModalDisplay = "block;";
+        ModalClass = "Show";
+        ShowBackdrop = true;
+        IsOpen = true;
+        StateHasChanged();
+    }
+
+    public void Close()
+    {
+        ModalDisplay = "none";
+        ModalClass = "";
+        ShowBackdrop = false;
+        IsOpen = false;
+        StateHasChanged();
+
+    }
+
+    private async Task InsertSpill()
+    {
+        SpillModel spillReport = new SpillModel
+        {
+            Department = newSpill.Department,
+            Aisle = newSpill.Aisle,
+            WetSpill = newSpill.WetSpill,
+            Glass = newSpill.Glass,
+            Scrubber = newSpill.Scrubber,
+            Comments = newSpill.Comments,
+            Date = DateTime.Now,
+            Complete = false
+        };
+
+        await _db.InsertSpill(spillReport);
+
+        newSpill = new DisplayAisleSpillModel();
+
+        Close();
+
+        //force reload to refresh list
+        NavigationManager.NavigateTo("/SanitationPage/SanitationMainPage", true);
+    }
+}

@@ -1,0 +1,202 @@
+﻿@page "/"
+@*Sanitation*@
+@using DataAccessLibrary.Models.SanitationModels
+@using DataAccessLibrary.Data.SanitationData.AisleSpillData
+@using DataAccessLibrary.Data.SanitationData.DockSpillData
+@using DataAccessLibrary.Data.SanitationData.CardboardRequestData
+
+@*Inventory*@
+@using DataAccessLibrary.Models.InventoryModels
+@using DataAccessLibrary.Data.InventoryData.OwnedByAnotherItemData
+
+@*Maintenance*@
+@using DataAccessLibrary.Models.MaintenanceModels
+@using DataAccessLibrary.Data.MaintenanceData
+@using DataAccessLibrary.Data.MaintenanceData.RedDoorServiceData
+
+@*Safety*@
+@using DataAccessLibrary.Models.SafetyModels
+@using DataAccessLibrary.Data.SafetyData
+@using DataAccessLibrary.Data.SafetyData.LooseProductData
+
+
+@*Sanitation*@
+@inject ISpillData _dbAisleSpill;
+@inject IDockSpillData _dbDockSpill;
+@inject ICardboardRequestData _dbCardboardRequest;
+
+@*Inventory*@
+@inject IOwnedByAnotherItemData _dbOwnedByAnotherItem;
+
+@*Maintenance*@
+@inject IRackDamageData _db;
+@inject IDoorDamageData _dbDoor;
+@inject IRedDoorServiceData _dbRedDoor;
+
+@*Safety*@
+@inject IDangerousPalletData _dbDangerousPallet
+@inject ILooseProductData _dbLooseProduct
+
+
+<div class="card-deck">
+    <div class="card alert alert-secondary">
+        <div class="card-body">
+            <NavLink class="nav-link text-dark" href="SanitationPage/SanitationMainPage">
+                <h1><span class="oi oi-trash" aria-hidden="true"> Sanitation</span></h1>
+                <hr class="my-4">
+                <p class="card-text">Report directly to Sanitation</p>
+                <ul>
+                    <li>Spills in the Aisles</li>
+                    <li>Spills on the Dock</li>
+                    <li>Request Cardboard</li>
+                </ul>
+                <hr class="my-4">
+                @if (sanitationTotal == 0)
+                {
+                <p class="card-text" style="color:green"><small>All reports complete</small></p>
+                }
+                else
+                {
+                <p class="card-text" style="color:red"><small>@sanitationTotal active reports</small></p>
+
+                }
+            </NavLink>
+        </div>
+    </div>
+    <div class="card alert alert-secondary">
+        <div class="card-body">
+            <NavLink class="nav-link text-dark" href="SafetyPage/SafetyMainPage">
+                <h1><span class="oi oi-bullhorn" aria-hidden="true"> Safety</span></h1>
+                <hr class="my-4">
+                <p class="card-text">See something dangerous?</p>
+                <ul>
+                    <li>Dangerous Pallets in the Rack</li>
+                    <li>Loose Product Stuck in the Rack</li>
+                </ul>
+                <hr class="my-4">
+                    @if (safetyTotal == 0)
+                    {
+                    <p class="card-text" style="color:green"><small>All reports complete</small></p>
+                    }
+                    else
+                    {
+                    <p class="card-text" style="color:red"><small>@safetyTotal active reports</small></p>
+
+                    }
+            </NavLink>
+        </div>
+    </div>
+</div>
+<hr class="my-4">
+<div class="card-deck">
+    <div class="card alert alert-secondary">
+        <div class="card-body">
+            <NavLink class="nav-link text-dark" href="InventoryPage/InventoryMainPage">
+                <h1><span class="oi oi-clipboard" aria-hidden="true"> Inventory</span></h1>
+                <hr class="my-4">
+                <p class="card-text">Report directly to Sanitation</p>
+                <ul>
+                    <li>Owned By Another Item</li>
+                </ul>
+                <hr class="my-4">
+                @if (inventoryTotal == 0)
+                {
+                <p class="card-text" style="color:green"><small>All reports complete</small></p>
+                }
+                else
+                {
+                <p class="card-text" style="color:red"><small>@inventoryTotal active reports</small></p>
+
+                }
+            </NavLink>
+        </div>
+    </div>
+    <div class="card alert alert-secondary">
+        <div class="card-body">
+            <NavLink class="nav-link text-dark" href="MaintenancePage/MaintenanceMainPage">
+                <h1><span class="oi oi-wrench" aria-hidden="true"> Maintenance</span></h1>
+                <hr class="my-4">
+                <p class="card-text">Report directly to Maintenance</p>
+                <ul>
+                    <li>Rack Damage</li>
+                    <li>Door Damage</li>
+                    @*<li>Hitch Damage</li>
+                    <li>Dock Plate Service</li>*@
+                    <li>Red Door Service</li>
+                </ul>
+                <hr class="my-4">
+
+                @if (maintenanceTotal == 0)
+                {
+                <p class="card-text" style="color:green"><small>All reports complete</small></p>
+                }
+                else
+                {
+                <p class="card-text" style="color:red"><small>@maintenanceTotal active reports</small></p>
+
+                }
+            </NavLink>
+        </div>
+    </div>
+</div>
+<hr class="my-4">
+
+@code{
+
+    int sanitationTotal;
+    int inventoryTotal;
+    int maintenanceTotal;
+    int safetyTotal;
+
+    #region Table Lists
+
+    #region Sanitation
+    public List<SpillModel> spills;
+    public List<DockSpillModel> dockSpills;
+    public List<CardboardRequestModel> cardboardRequests;
+    #endregion
+
+    #region Inventory
+    public List<OwnedByAnotherItemModel> inventoryReports;
+    #endregion
+
+    #region Maintenance
+    public List<RackDamageModel> reports;
+    public List<DoorDamageModel> reportsDoor;
+    public List<RedDoorServiceModel> reportsRedDoor;
+    #endregion
+
+    #region Safety
+    public List<DangerousPalletModel> dangerousPalletReports;
+    public List<LooseProductModel> looseProductReports;
+    #endregion
+
+
+
+    #endregion
+
+
+    #region OnInitializedAsync
+    protected override async Task OnInitializedAsync()
+    {
+        spills = await _dbAisleSpill.GetActiveSpills();
+        dockSpills = await _dbDockSpill.GetActiveSpills();
+        cardboardRequests = await _dbCardboardRequest.GetActiveCardboardRequests();
+        sanitationTotal = spills.Count() + dockSpills.Count() + cardboardRequests.Count();
+
+        inventoryReports = await _dbOwnedByAnotherItem.GetActiveReports();
+        inventoryTotal = inventoryReports.Count();
+
+        reports = await _db.GetActiveReports();
+        reportsDoor = await _dbDoor.GetActiveReports();
+        reportsRedDoor = await _dbRedDoor.GetActiveReports();
+        maintenanceTotal = reports.Count() + reportsDoor.Count() + reportsRedDoor.Count();
+
+        dangerousPalletReports = await _dbDangerousPallet.GetActiveReports();
+        looseProductReports = await _dbLooseProduct.GetActiveReports();
+        safetyTotal = dangerousPalletReports.Count() + looseProductReports.Count();
+
+    }
+    #endregion
+
+}
